@@ -1,0 +1,37 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "modelpruner"
+version = "2024.0.1"
+description = "A lightweight model pruning framework for AI models."
+readme = "README.md"
+requires-python = ">=3.9"
+license = {file = "LICENSE"}
+authors = [
+  {name = "Sneha H", email = "sneha.rmh@gmail.com"},
+]
+maintainers = [
+  {name = "Sneha H", email = "sneha.rmh@gmail.com"},
+]
+keywords = ["Deep Learning", "Model Compression", "Pruning", "PyTorch", "ML Efficiency"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Developers",
+  "Topic :: Scientific/Engineering :: Artificial Intelligence",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.9",
+  "License :: OSI Approved :: MIT License"
+]
+dependencies = [
+  "torch>=1.9",
+  "pytorch_lightning",
+  "einops",
+  "pandas",
+  "onnx",
+  "thop"  # For model profiling / FLOP counting
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["modelpruner"]
