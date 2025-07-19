@@ -1,3 +1,14 @@
+> 📄 This repository supports the paper "**Weight Statistics Aware Network Pruning**" (submitted to IEEE CSCN 2025).  
+> Further documentation, code cleanup, and reproducibility scripts will be added shortly.
+
+ ## Related Repositories
+
+This repository provides a generic, model-agnostic pruning framework. For specific use cases, see the following repositories where this framework is applied:
+
+- 🔬 **DOVER-Mobile (VQA Task)** – [https://github.com/sneha-h/Efficient-DOVER-Mobile](https://github.com/sneha-h/Efficient-DOVER-Mobile)
+- 📈 **CrossFormer (Time-Series Forecasting Task)** – [https://github.com/Sedimark/Crossformer/tree/feature_pruning](https://github.com/Sedimark/Crossformer/tree/feature_pruning)
+
+
 # ModelPruner
 
 ## What is ModelPruner?
