@@ -1,5 +1,5 @@
 > 📄 This repository supports the paper "**Weight Statistics Aware Network Pruning**" (submitted to IEEE CSCN 2025).  
-> Further documentation, code cleanup, and reproducibility scripts will be added shortly.
+> Further documentation, code cleanup, and reproducibility scripts will be added shortly. 
 
  ## Related Repositories
 
