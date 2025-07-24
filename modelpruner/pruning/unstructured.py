@@ -9,6 +9,44 @@ import pandas as pd
 import torch
 import torch.nn.utils.prune as prune
 from torch import nn
+import numpy as np
+
+
+def compute_cov(mean: float, std_dev: float) -> float:
+    return float('inf') if abs(mean) == 0 else std_dev / abs(mean)
+
+def calculate_pruning_ratios_for_model(layer_stats: list[tuple[float, float]]) -> list[tuple[float, float]]:
+    """
+    Given a list of (mean, std_dev) for each layer, compute the CoV and pruning ratio using dynamic thresholds.
+
+    Args:
+        layer_stats (list): List of tuples (mean, std_dev) for each layer.
+
+    Returns:
+        list: List of tuples (CoV, pruning ratio) per layer.
+    """
+    # Step 1: Calculate CoVs
+    covs = [compute_cov(mean, std) for mean, std in layer_stats]
+
+    # Step 2: Compute thresholds dynamically
+    cov_array = np.array([c if np.isfinite(c) else 0 for c in covs])  # Replace inf with 0 for thresholding
+    low_thresh = np.percentile(cov_array, 33)
+    high_thresh = np.percentile(cov_array, 66)
+
+    print(f"[DEBUG] Low threshold: {low_thresh}, High threshold: {high_thresh}")
+
+    # Step 3: Assign pruning ratios based on thresholds
+    pruning_ratios = []
+    for cov in covs:
+        if cov > high_thresh:
+            pruning_ratios.append((cov, 0.7))
+        elif cov > low_thresh:
+            pruning_ratios.append((cov, 0.5))
+        else:
+            pruning_ratios.append((cov, 0.3))
+
+    return pruning_ratios
+
 
 def calculate_pruning_ratio(mean: float, std_dev: float) -> tuple:
     """
@@ -29,6 +67,47 @@ def calculate_pruning_ratio(mean: float, std_dev: float) -> tuple:
     return cov, 0.3
 
 def get_pruning_ratios(model: nn.Module) -> dict:
+    """
+    Compute and return the pruning ratio for each weight layer in the model.
+    
+    Args:
+        model (nn.Module): The model to analyze.
+
+    Returns:
+        dict: Dictionary mapping layer names to their pruning ratios.
+    """
+    state_dict = model.state_dict()
+    pruning_ratios = {}
+    layer_stats = []
+    mean_std_list = []
+    layer_names = []
+
+    # First pass: gather stats
+    for layer_name, param in state_dict.items():
+        if 'weight' not in layer_name:
+            continue
+        param_data = param.cpu().numpy()
+        mean, std_dev = param_data.mean(), param_data.std()
+        min_val, max_val, count = param_data.min(), param_data.max(), param_data.size
+        mean_std_list.append((mean, std_dev))
+        layer_names.append(layer_name)
+        layer_stats.append([layer_name, mean, std_dev, min_val, max_val, count])  # We'll add CoV + ratio later
+
+    # Calculate CoV and pruning ratios
+    cov_ratio_list = calculate_pruning_ratios_for_model(mean_std_list)
+
+    # Final pass: build full stats
+    for i, (cov, pruning_ratio) in enumerate(cov_ratio_list):
+        pruning_ratios[layer_names[i]] = pruning_ratio
+        layer_stats[i].extend([cov, pruning_ratio])
+
+    # Optional: print or save DataFrame
+    df = pd.DataFrame(layer_stats, columns=["Layer Name", "Mean", "Std Dev", "Min", "Max", "Count", "CoV", "Pruning Ratio"])
+    # print(df)
+
+    return pruning_ratios
+
+def get_pruning_ratios_specific(model: nn.Module) -> dict:
     """
     Compute and return the pruning ratio for each weight layer in the model.
     

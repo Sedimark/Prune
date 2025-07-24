@@ -1,171 +1,224 @@
-> 📄 This repository supports the paper "**Weight Statistics Aware Network Pruning**" (submitted to IEEE CSCN 2025).  
-> Further documentation, code cleanup, and reproducibility scripts will be added shortly. 
-
- ## Related Repositories
-
-This repository provides a generic, model-agnostic pruning framework. For specific use cases, see the following repositories where this framework is applied:
-
-- 🔬 **DOVER-Mobile (VQA Task)** – [https://github.com/sneha-h/Efficient-DOVER-Mobile](https://github.com/sneha-h/Efficient-DOVER-Mobile)
-- 📈 **CrossFormer (Time-Series Forecasting Task)** – [https://github.com/Sedimark/Crossformer/tree/feature_pruning](https://github.com/Sedimark/Crossformer/tree/feature_pruning)
-
-
 # ModelPruner
 
-## What is ModelPruner?
+**ModelPruner** is a lightweight, modular Python framework designed to apply **Weight Statistics Aware Pruning (WSAP)** and support efficient, config-driven pruning pipelines for deep learning models — particularly targeting **AI edge deployments**.
 
-ModelPruner is a lightweight, modular Python framework designed to efficiently apply **structured** (channel) and **unstructured** pruning techniques to deep learning models, primarily PyTorch-based. It aims to reduce model size and computational cost while preserving accuracy and performance.
+This repository generalizes the pruning methodology developed and validated in two real-world applications:
 
-While initially applied and tested on transformer-based models like Crossformer for multivariate time series forecasting, ModelPruner is designed to be **model-agnostic** and easily extensible to support a wide range of architectures.
+- **DOVER-Mobile**: Video Quality Assessment (VQA)
+- **CrossFormer**: Time-Series Forecasting
 
----
-
-## Key Features
-
-* Structured pruning (channel pruning) and unstructured pruning support
-* Config-driven pipeline for loading, inspecting, pruning, and saving models
-* Support for complex models with minimal code change
-* Integrated model inspection and profiling tools
-* Lightweight and easy to extend
-* Compatible with PyTorch models and Lightning training framework
+The code here abstracts and refactors the original pruning logic from those models, aiming to make it **model-agnostic**, reusable, and extendable for broader use cases.
 
 ---
 
-## Installation
+## 🚀 Purpose
 
-You can clone the repository and install ModelPruner in editable mode:
+- Provide a reusable framework for unstructured pruning using WSAP
+- Enable rapid experimentation via YAML-based configuration
+- Optimize PyTorch models for inference in edge environments
+- Serve as a foundation for structured and hybrid pruning extensions
+
+---
+
+## ⚙️ Prerequisites / Dependencies
+
+Requirements are defined in `pyproject.toml`. Main dependencies:
+
+```toml
+requires-python = ">=3.9"
+
+dependencies = [
+  "torch>=1.9",
+  "pytorch_lightning",
+  "einops",
+  "pandas",
+  "onnx",
+  "thop"  # For model profiling / FLOP counting
+]
+```
+
+To install:
 
 ```bash
-git clone git@github.com:Sedimark/Prune.git
+pip install -e .
+```
+
+---
+
+## 🧩 Installation
+
+```bash
+git clone https://github.com/Sedimark/Prune.git
 cd Prune
 conda create --name modelpruner_env python=3.9
 conda activate modelpruner_env
 pip install -e .
 ```
 
-## Project Structure
+---
+
+## 📁 Project Structure
 
 ```text
 .
-├── modelpruner 
-│   ├── interfaces
+├── modelpruner/
+│   ├── interfaces/
 │   │   ├── __init__.py
-│   │   ├── model_loader.py
-│   │   ├── model_inspector.py
-│   │   ├── channel_pruner.py
-│   │   └── unstructured_pruner.py
-├── pruning
+│   │   ├── model_loader.py         # Load full models from .pth
+│   │   ├── model_inspector.py      # Print/model info, FLOPs, params
+│   │   ├── channel_pruner.py       # Placeholder for structured pruning interface
+│   │   └── unstructured_pruner.py  # Core WSAP unstructured pruning interface
+│   │
+│   ├── pruning/
 │   │   ├── __init__.py
-│   │   ├── channel.py
-│   │   ├── unstructured.py
-│   ├── utils
+│   │   ├── channel.py              # (Placeholder) Channel pruning logic (to be extended)
+│   │   └── unstructured.py         # WSAP implementation
+│   │
+│   ├── utils/
 │   │   ├── __init__.py
-│   │   └── model_profiling.py
-│   └── __init__.py
-├── scripts
-│   ├── main.py
-│   └── main_prune.py
-├── tests
+│   │   └── model_profiling.py      # FLOPs and model inspection utilities
+│
+├── scripts/
+│   ├── main.py                     # Main pruning runner (WSAP)
+│
+├── config/
+│   └── pruning_config.yaml         # Sample config with model/input/output paths
+│
+├── tests/
 │   ├── __init__.py
-│   └── test_pruning.py
-├── config
-│   └── pruning_config.yaml
+│   └── test_pruning.py             # Unit test for pruning validation
+│
 ├── LICENSE
 ├── README.md
-├── pyproject.toml
-└── setup.py
+├── pyproject.toml                  # Project metadata and dependencies
+└── setup.py                        # Install script for legacy compatibility
 ```
 
 ---
 
-## Getting Started
+## 🔧 Configuration Parameters
 
-ModelPruner uses a **config-driven pipeline** to control the pruning process. The config file defines your model parameters, pruning method, and other settings.
-
-### Example Configuration (`pruning_config.yaml`)
+### Example (`config/pruning_config.yaml`):
 
 ```yaml
 model:
   type: "torch"
   path: "original_models/model.pth"
-  class_path: "crossformer.model.crossformer.Crossformer"
-  model_args:
-    data_dim: 8
-    in_len: 24
-    out_len: 24
-    seg_len: 2
-    window_size: 4
-    factor: 10
-    model_dim: 256
-    feedforward_dim: 512
-    head_num: 4
-    layer_num: 6
-    dropout: 0.2
-    baseline: false
-
-unstructured:
-  method: "magnitude"
-  thresholds:
-    default: 0.5
-
-channels:
-  prune_ratio: 0.5
 
 output_path: "pruned_models/pruned_model.pth"
 ```
 
-You can modify this config for your own model and pruning strategy.
+| Key            | Description |
+|----------------|-------------|
+| `model.path`   | Full model file saved with `torch.save(model)` |
+| `output_path`  | Where the pruned model is saved |
 
 ---
 
-### Running the Pruning Pipeline
-
-Use the provided main script as an example of running the full pruning pipeline:
+## 🔄 Running the Pipeline
 
 ```bash
-python scripts/main_prune.py --config config/pruning_config.yaml
+python scripts/main.py --config config/pruning_config.yaml
 ```
 
 This will:
-
-* Load the model using your config
-* Inspect and profile the model
-* Apply unstructured and/or channel pruning as specified
-* Save the pruned model to the specified path
+- Load the model
+- Analyze and profile it
+- Apply WSAP-based pruning
+- Save the pruned model
 
 ---
 
-### Code Usage Example
+## 🧠 Code Integration Example
 
 ```python
 from modelpruner.interfaces import model_loader, model_inspector, unstructured_pruner
 import yaml
+import torch
 
-def run_pipeline(cfg_path: str):
-    with open(cfg_path, "r") as f:
+def run_pipeline(cfg_path):
+    with open(cfg_path) as f:
         cfg = yaml.safe_load(f)
 
     model = model_loader.load_model(cfg["model"])
-    info = model_inspector.get_model_info(model)
-    print("Original Model Info:", info)
+    model_inspector.get_model_info(model)
 
-    pruned_model = unstructured_pruner.apply_unstructured_pruning(model, cfg["unstructured"])
-    pruned_info = model_inspector.get_pruned_model_info(model, pruned_model)
-    print("Pruned Model Info:", pruned_info)
+    pruned_model = unstructured_pruner.apply_unstructured_pruning(model)
+    model_inspector.get_pruned_model_info(model, pruned_model)
 
-    torch.save(pruned_model.state_dict(), cfg["output_path"])
+    torch.save(pruned_model, cfg["output_path"])
 ```
 
 ---
 
-## Testing
+## ✅ Test Suite
 
-Tests are located in the `tests` folder and can be run with:
+Run:
 
 ```bash
-pytest tests/test_pruning_pipeline.py
+python tests/test_pruning_pipeline.py
 ```
 
-## Acknowledgement
+Test cases validate:
+- Model loading
+- WSAP pruning logic
+- Pruned model structure
 
+---
+
+## 🐞 Debug / Console Messages
+
+Console outputs include:
+- Pre- and post-pruning model stats (params, FLOPs, model size)
+- Layer-wise sparsity if profiling is added
+- Save path confirmation
+
+---
+
+## 📌 Best Practices
+
+### Saving Your Model
+
+Ensure you use:
+```python
+torch.save(model, "original_models/model.pth")
+```
+
+### Output Location
+
+```python
+torch.save(pruned_model, "pruned_models/pruned_model.pth")
+```
+
+> After pruning, finetune your model to restore accuracy.
+
+### Evaluating Results
+
+Use `model_inspector` logs to compare pre/post model stats:
+- Parameters
+- FLOPs
+- Model Size
+- Layer-specific sparsity 
+
+---
+
+## 📚 From Paper to General Tooling
+
+This framework is the **generalized version** of the pruning method from:
+
+> 📄 "*Weight Statistics Aware Network Pruning*" (submitted to IEEE CSCN 2025)
+
+Originally implemented for:
+
+- 🎥 **DOVER-Mobile (VQA)**: [Efficient-DOVER-Mobile](https://github.com/sneha-h/Efficient-DOVER-Mobile)
+- 📈 **CrossFormer (Forecasting)**: [CrossFormer - feature_pruning](https://github.com/Sedimark/Crossformer/tree/feature_pruning)
+
+This repo abstracts the pruning logic into a **clean, model-agnostic framework**, to help reuse it for **other models and domains**.
+
+**Note:** Channel pruning shown in the paper is implemented in the task-specific repos above. This repository currently supports only unstructured WSAP pruning.
+
+---
+
+## 🎓 Acknowledgement
 
 This software has been developed by the [University of Surrey](https://www.surrey.ac.uk/) under the [SEDIMARK (SEcure Decentralised Intelligent Data MARKetplace)](https://sedimark.eu/) project. SEDIMARK is funded by the European Union under the Horizon Europe framework programme [grant no. 101070074]. This project is also partly funded by UK Research and Innovation (UKRI) under the UK government’s Horizon Europe funding guarantee [grant no. 10043699].

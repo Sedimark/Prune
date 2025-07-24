@@ -1,27 +1,7 @@
 model:
   type: "torch"
   path: "original_models/model.pth"
-  class_path: crossformer.model.crossformer.Crossformer
-  model_args:
-    data_dim: 8
-    in_len: 24
-    out_len: 24
-    seg_len: 2
-    window_size: 4
-    factor: 10
-    model_dim: 256
-    feedforward_dim: 512
-    head_num: 4
-    layer_num: 6
-    dropout: 0.2
-    baseline: false
 
-unstructured:
-  method: "magnitude"
-  thresholds:
-    default: 0.5
-channels:
-    prune_ratio: 0.5
 output_path: "pruned_models/pruned_model.pth"
 
 

@@ -12,7 +12,7 @@ Maintainer: Sneha H - Surrey
 
 from modelpruner.pruning.unstructured import get_pruning_ratios, FineGrainedPruner
 
-def apply_unstructured_pruning(model, cfg: dict):
+def apply_unstructured_pruning(model):
     """
     Applies unstructured (fine-grained) pruning to the model using dynamic sparsity ratios.
 

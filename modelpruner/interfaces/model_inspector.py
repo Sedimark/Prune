@@ -9,6 +9,7 @@ Author: Sneha H - Surrey
 Maintainer: Sneha H - Surrey
 """
 from typing import Dict
+import torch
 import torch.nn as nn
 import pandas as pd
 from modelpruner.utils.model_profiling import ( 
@@ -18,6 +19,10 @@ from modelpruner.utils.model_profiling import (
     profile_model,
     get_model_sparsity
 )
+import logging
+# Set up logging
+logging.basicConfig(level=logging.INFO, format='[%(levelname)s] %(message)s')
+logger = logging.getLogger(__name__)
 
 # Memory unit constants
 Byte = 8
@@ -39,17 +44,37 @@ def get_model_info(model: nn.Module) -> Dict[str, str]:
     """
     model_size = get_model_size(model)
     num_params = get_num_parameters(model)
-    sparsity = get_model_sparsity(model)
+    model_sparsity = get_model_sparsity(model)
+    logger.info(f"Original model has size={model_size / MiB:.2f} MiB, \
+        number of parameters: {num_params}, model sparsity: {model_sparsity:.5f}")
     
     return {
         "Model Size (bits)": model_size,
         "Number of Parameters": num_params,
-        "Sparsity": sparsity
-    }
+        "Model Sparsity": model_sparsity
+        }
 
-def get_pruned_model_info(model: nn.Module, pruned_model: nn.Module) -> Dict[str, str]:
+def get_pruned_model_info(model: nn.Module, pruned_model: nn.Module, original_model: nn.Module) -> Dict[str, str]:
     sparse_model_size = get_model_size(pruned_model, count_nonzero_only=True)
     sparse_model_parameters = get_num_parameters(pruned_model, count_nonzero_only=True)
+    model_sparsity = get_model_sparsity(pruned_model)
+    model_size = get_model_size(original_model)
+    logger.info(f"sparse - model size: {sparse_model_size / MiB:.2f} MiB, \
+        number of parameters: {sparse_model_parameters}, model_sparsity - {model_sparsity:.5f}")
+    logger.info(f"Sparse model has size={sparse_model_size / MiB:.2f} MiB = {sparse_model_size / model_size * 100:.2f}% of dense model size")
+
+    return {
+        "Sparse Model Size (bits)": int(sparse_model_size) if isinstance(sparse_model_size, torch.Tensor) else sparse_model_size,
+        "Sparse Number of Parameters": int(sparse_model_parameters) if isinstance(sparse_model_parameters, torch.Tensor) else sparse_model_parameters,
+        "Sparse Model Sparsity": float(model_sparsity) if isinstance(model_sparsity, torch.Tensor) else model_sparsity
+   }
+
+   
+
+def get_pruned_model_info_with_zeroes(model: nn.Module, pruned_model: nn.Module) -> Dict[str, str]:
+    print("with counting zeroes")
+    sparse_model_size = get_model_size(pruned_model)
+    sparse_model_parameters = get_num_parameters(pruned_model)
     model_sparsity = get_model_sparsity(model)
     model_size = get_model_size(model)
     print(f"sparse - model size: {sparse_model_size / MiB:.2f}, number of parameters: {sparse_model_parameters} \
@@ -57,20 +82,13 @@ def get_pruned_model_info(model: nn.Module, pruned_model: nn.Module) -> Dict[str
     print(f"Sparse model has size={sparse_model_size / MiB:.2f} \
         MiB = {sparse_model_size / model_size * 100:.2f}% of dense model size")
 
-    print("with counting zeroes")
-    sparse_model_size = get_model_size(pruned_model)
-    sparse_model_parameters = get_num_parameters(pruned_model)
-    model_sparsity = get_model_sparsity(model)
-    print(f"sparse - model size: {sparse_model_size / MiB:.2f}, number of parameters: {sparse_model_parameters} \
-        model_sparsity - {model_sparsity}")
-    print(f"Sparse model has size={sparse_model_size / MiB:.2f} \
-        MiB = {sparse_model_size / model_size * 100:.2f}% of dense model size")
-    
     return {
         "Sparse Model Size (bits)": sparse_model_size,
         "Sparse Number of Parameters": sparse_model_parameters,
         "Sparse Model Sparsity": model_sparsity
         }
+
+
     
 def inspect_model(model: nn.Module) -> pd.DataFrame:
     layers = []

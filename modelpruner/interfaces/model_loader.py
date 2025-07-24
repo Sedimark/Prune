@@ -35,39 +35,18 @@ def load_model(cfg: dict) -> torch.nn.Module:
     model_type = cfg.get('type')
 
     if model_type == 'torch':
-        model_args = cfg['model_args']
         model_path = cfg['path']
-        class_path = cfg['class_path']
 
-        # Dynamically import the model class
-        module_path, class_name = class_path.rsplit('.', 1)
-        module = importlib.import_module(module_path)
-        ModelClass = getattr(module, class_name)
-
-        # Attempt to load model from state_dict
+        # load full model using
         try:
-            print("[INFO] Trying to load model from state_dict...")
-            model = ModelClass(**model_args)
-            state_dict = torch.load(model_path, map_location='cpu')
-            if isinstance(state_dict, dict) and "state_dict" in state_dict:
-                state_dict = state_dict["state_dict"]
-            model.load_state_dict(state_dict)
-            print("[INFO] Model loaded successfully from state_dict.")
+            print("[INFO] Trying to load full model...")    
+            model = torch.load(model_path, map_location='cpu', weights_only=False)
+            print(f"[DEBUG] state_dict type {type(model)}")
+            print("[INFO] Full model loaded successfully.")
             return model
 
         except Exception as e:
-            print(f"[WARNING] Failed to load state_dict: {e}")
-            print("[INFO] Falling back to full model load using safe_globals...")
-
-        # Fallback: load full model using trusted class
-        try:
-            with safe_globals([ModelClass]):
-                model = torch.load(model_path, map_location='cpu', weights_only=False)
-                print("[INFO] Full model loaded successfully with safe_globals.")
-                return model
-
-        except Exception as e:
-            raise RuntimeError(f"[ERROR] Failed to load model even with safe_globals: {e}")
+            raise RuntimeError(f"[ERROR] Failed to load model: {e}")
 
     elif model_type == 'lightning':
         print("[INFO] Loading PyTorch Lightning model...")

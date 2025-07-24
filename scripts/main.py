@@ -16,7 +16,11 @@ import logging
 import yaml
 import torch
 
-from modelpruner.interfaces import model_loader, model_inspector, unstructured_pruner
+from modelpruner.interfaces import (
+    model_loader,
+    model_inspector,
+    unstructured_pruner, 
+)
 
 # Set up logging
 logging.basicConfig(level=logging.INFO, format='[%(levelname)s] %(message)s')
@@ -37,19 +41,21 @@ def run_pipeline(cfg_path: str):
 
     # Step 1: Load model
     model = model_loader.load_model(cfg['model'])
-    logger.info("Model loaded.")
+    logger.info("Model loaded.\n")
 
     # Step 2: Inspect model
-    info = model_inspector.get_model_info(model)
-    logger.info("Original Model Info:\n%s", info)
+    logger.info("Original Model Info:")
+    model_inspector.get_model_info(model)
+    
 
     # Step 3: Apply unstructured pruning
-    pruned_model = unstructured_pruner.apply_unstructured_pruning(model, cfg['unstructured'])
-    logger.info("Pruning applied.")
+    pruned_model = unstructured_pruner.apply_unstructured_pruning(model)
+    logger.info("Weight Statistic Aware (Unstructured) Pruning applied.\n")
 
     # Step 4: Inspect pruned model
-    pruned_info = model_inspector.get_pruned_model_info(model, pruned_model)
-    logger.info("Pruned Model Info:\n%s", pruned_info)
+    logger.info("Pruned Model Info:")
+    model_inspector.get_pruned_model_info(model, pruned_model, model)
+ 
 
     # Step 5: Save pruned model
     torch.save(pruned_model.state_dict(), cfg['output_path'])
